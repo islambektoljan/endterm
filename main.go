@@ -1,7 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -51,5 +54,69 @@ func main() {
 	initMinIO()
 
 	r := gin.Default()
+	r.POST("/upload-txt", uplaodTxtFile)
+	r.POST("/upload-json", uplaodJSONHandler)
+	r.POST("/upload-txt", uplaodTXTHandler)
 	r.Run(":8080")
+}
+
+func checkExtension(filename, allowedExt string) bool {
+	ext := strings.ToLower(filepath.Ext(filename))
+	return ext == allowedExt
+}
+
+func uploadFileWithExtension(c *gin.Context, allowedExt string) {
+	file, header, err := c.Request.FormFile("file")
+	if err != nil {
+		c.JSON(400, gin.H{"error": "No file received"})
+		return
+	}
+	defer file.Close()
+
+	if !checkExtension(header.Filename, allowedExt) {
+		c.JSON(400, gin.H{
+			"error": fmt.Sprintf("Invalid file type. Expected %s, got %s",
+				allowedExt, filepath.Ext(header.Filename)),
+		})
+		return
+	}
+
+	objectName := fmt.Sprintf("%s_%d%s",
+		strings.TrimPrefix(allowedExt, "."),
+		time.Now().UnixNano(),
+		allowedExt)
+
+	_, err = minioClient.PutObject(c, bucketName, objectName, file, header.Size, minio.PutObjectOptions{})
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Failed to upload to MinIO: " + err.Error()})
+		return
+	}
+
+	fileRecord := File{
+		FileName:     objectName,
+		OriginalName: header.Filename,
+		Extension:    allowedExt,
+		Size:         header.Size,
+	}
+
+	db.Create(&fileRecord)
+
+	c.JSON(200, gin.H{
+		"id":       fileRecord.ID,
+		"filename": header.Filename,
+		"type":     strings.TrimPrefix(allowedExt, "."),
+		"message":  "File uploaded successfully",
+	})
+}
+
+func uplaodTxtFile(c *gin.Context) {
+	uploadFileWithExtension(c, ".txt")
+}
+
+func uplaodJSONHandler(c *gin.Context) {
+	uploadFileWithExtension(c, ".json")
+}
+
+func uplaodTXTHandler(c *gin.Context) {
+	uploadFileWithExtension(c, ".txt")
 }
