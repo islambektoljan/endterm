@@ -49,14 +49,15 @@ func initMinIO() {
 }
 
 func main() {
-
 	initDB()
 	initMinIO()
 
 	r := gin.Default()
-	r.POST("/upload-txt", uplaodTxtFile)
-	r.POST("/upload-json", uplaodJSONHandler)
-	r.POST("/upload-txt", uplaodTXTHandler)
+
+	r.POST("/upload-png", uploadPNGHandler)
+	r.POST("/upload-json", uploadJSONHandler)
+	r.POST("/upload-txt", uploadTXTHandler)
+
 	r.Run(":8080")
 }
 
@@ -109,14 +110,14 @@ func uploadFileWithExtension(c *gin.Context, allowedExt string) {
 	})
 }
 
-func uplaodTxtFile(c *gin.Context) {
-	uploadFileWithExtension(c, ".txt")
+func uploadPNGHandler(c *gin.Context) {
+	uploadFileWithExtension(c, ".png")
 }
 
-func uplaodJSONHandler(c *gin.Context) {
+func uploadJSONHandler(c *gin.Context) {
 	uploadFileWithExtension(c, ".json")
 }
 
-func uplaodTXTHandler(c *gin.Context) {
+func uploadTXTHandler(c *gin.Context) {
 	uploadFileWithExtension(c, ".txt")
 }

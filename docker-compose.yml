@@ -5,12 +5,13 @@ services:
     ports:
       - "8080:8080"
     environment:
-      DB_HOST: user
-      DB_PASSWORD: password
+      DB_HOST: postgres
+      DB_PASSWORD: postgres
       MINIO_ENDPOINT: minio:9000
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin
+      MINIO_ACCESS_KEY: admin
+      MINIO_SECRET_KEY: admin12345
     depends_on:
+      - postgres
       - minio
     restart: unless-stopped
 
@@ -21,8 +22,8 @@ services:
       - "9000:9000"
       - "9001:9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: admin12345
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
@@ -50,9 +51,9 @@ services:
     image: postgres:latest
     container_name: postgres
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: mydb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: filedb
     ports:
       - "5432:5432"
     volumes:
@@ -60,5 +61,5 @@ services:
     restart: unless-stopped
 
 volumes:
-    minio_data:
-    pgdata:
+  minio_data:
+  pgdata:
