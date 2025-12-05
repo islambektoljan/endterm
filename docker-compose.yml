@@ -1,15 +1,15 @@
 services:
-
   app:
     build: .
     container_name: app
     ports:
       - "8080:8080"
     environment:
+      DB_HOST: user
+      DB_PASSWORD: password
       MINIO_ENDPOINT: minio:9000
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
-      MINIO_BUCKET: mybucket
     depends_on:
       - minio
     restart: unless-stopped
@@ -33,13 +33,17 @@ services:
     container_name: minio-setup
     depends_on:
       - minio
-    entrypoint: >
-      /bin/sh -c "
-      sleep 10 &&
-      mc alias set local http://minio:9000 minioadmin minioadmin &&
-      mc mb local/mybucket &&
-      mc policy set public local/mybucket
-      "
+    entrypoint: |
+      /bin/sh -c '
+        set -e
+        until mc alias set minio http://minio:9000 admin admin12345 >/dev/null 2>&1; do
+          echo "Waiting for MinIO..."
+          sleep 2
+        done
+        echo "MinIO is ready, creating bucket..."
+        mc mb -p minio/fisrt-bucket || true
+        echo "Bucket setup completed"
+      '
     restart: "no"
 
   postgres:
